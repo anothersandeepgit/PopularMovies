@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/scrollView" >
+
+<LinearLayout
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="New Text"
+            android:textSize="@dimen/abc_text_size_title_material"
+            android:id="@+id/titleTextView"
+             />
+
+
+    <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="New Text"
+            android:textSize="@dimen/abc_text_size_subhead_material"
+            android:id="@+id/releaseDateTextView"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="New Text"
+            android:textSize="@dimen/abc_text_size_subhead_material"
+            android:id="@+id/voteAverageTextView"
+             />
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="400dp"
+        android:id="@+id/posterImageView"
+        android:src="@drawable/filmreviewarchive_tiny"
+        />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:text="New Text"
+        android:inputType="textMultiLine"
+        android:textSize="@dimen/abc_text_size_subhead_material"
+        android:id="@+id/summaryTextView"
+        />
+
+</LinearLayout>
+    </ScrollView>
