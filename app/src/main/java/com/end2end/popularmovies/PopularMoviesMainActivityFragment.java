@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -38,7 +39,6 @@ public class PopularMoviesMainActivityFragment extends Fragment {
 
     //before using this app put the API key in the variable (api_key) below
     String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
-    
 
     String sort_order = "popularity.desc";
 
@@ -62,10 +62,10 @@ public class PopularMoviesMainActivityFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
-    //@Override
-    //public void onSaveInstanceState(Bundle outState) {
-        //outState.putParcelableArrayList(saveInstanceState_key, (ArrayList<? extends Parcelable>) movieArrayList);
-    //}
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArrayList(saveInstanceState_key, (ArrayList<? extends Parcelable>) movieArrayList);
+    }
 
     @Override
     public void onCreateOptionsMenu(Menu menu,  MenuInflater inflater) {
