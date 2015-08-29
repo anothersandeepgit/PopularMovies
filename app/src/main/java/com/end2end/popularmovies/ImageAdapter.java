@@ -55,9 +55,13 @@ public class ImageAdapter extends BaseAdapter {
         if (mThumbsUrl != null) {
             //Picasso.with(mContext).load("http://i.imgur.com/DvpvklR.png").into(imageView);
             Log.d("IMAGE_ADAPTER", position + " === " + mThumbsUrl[position]);
-            Picasso.with(mContext).load(mThumbsUrl[position]).into(imageView);
+            Picasso.with(mContext)
+                    .load(mThumbsUrl[position])
+                    .placeholder(R.drawable.loading)
+                    .error(R.drawable.movie_poster_unavailable)
+                    .into(imageView);
         }else {
-            imageView.setImageResource(R.drawable.filmreviewarchive_tiny);
+            imageView.setImageResource(R.drawable.loading);
             imageView.setLayoutParams(new GridView.LayoutParams(400, 400));
             imageView.setTranslationX(40);
             imageView.setTranslationY(40);

@@ -38,12 +38,15 @@ public class PopularMoviesMainActivityFragment extends Fragment {
 
     //before using this app put the API key in the variable (api_key) below
     String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
+    
 
     String sort_order = "popularity.desc";
 
     private final String LOG_TAG = PopularMoviesMainActivityFragment.class.getSimpleName();
 
     GridView gridview;
+    List<MovieNode> movieArrayList;
+    String saveInstanceState_key = "MOVIES_LIST";
 
     //references to our initial image
     private Integer[] mThumbsIds = { R.drawable.loading };
@@ -53,8 +56,16 @@ public class PopularMoviesMainActivityFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+        if(savedInstanceState != null) {
+            movieArrayList = (List<MovieNode>)savedInstanceState.get(saveInstanceState_key);
+        }
         setHasOptionsMenu(true);
     }
+
+    //@Override
+    //public void onSaveInstanceState(Bundle outState) {
+        //outState.putParcelableArrayList(saveInstanceState_key, (ArrayList<? extends Parcelable>) movieArrayList);
+    //}
 
     @Override
     public void onCreateOptionsMenu(Menu menu,  MenuInflater inflater) {
@@ -267,7 +278,7 @@ public class PopularMoviesMainActivityFragment extends Fragment {
             JSONArray movieArray = moviesJson.getJSONArray(MOVIE_RESULT);
 
             String[] resultStrs = new String[numFields2Extract];
-            List<MovieNode> movieArrayList = new ArrayList<MovieNode>();
+            movieArrayList = new ArrayList<MovieNode>();
 
             String BASE_POSTER_URL = "http://image.tmdb.org/t/p/";
             String POSTER_SIZE = "w185";
