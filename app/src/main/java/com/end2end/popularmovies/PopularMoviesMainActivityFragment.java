@@ -37,8 +37,8 @@ import java.util.List;
 public class PopularMoviesMainActivityFragment extends Fragment {
 
     //before using this app put the API key in the variable (api_key) below
-    //String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
-    String api_key = "3f9ba3a7cf26793007032a520fbe0cff";
+    String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
+
 
     String sort_order = "popularity.desc";
 
