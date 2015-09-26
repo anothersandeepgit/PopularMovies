@@ -46,7 +46,7 @@ public class ImageAdapter extends BaseAdapter {
         if (convertView == null){
             //if it's not recycled, initialize some attributes
             imageView = new ImageView(mContext);
-            imageView.setLayoutParams(new GridView.LayoutParams(200, 200));
+            imageView.setLayoutParams(new GridView.LayoutParams(400, 400));
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
             imageView.setPadding(4, 4, 4, 4);
         } else {
@@ -55,7 +55,16 @@ public class ImageAdapter extends BaseAdapter {
         if (mThumbsUrl != null) {
             //Picasso.with(mContext).load("http://i.imgur.com/DvpvklR.png").into(imageView);
             Log.d("IMAGE_ADAPTER", position + " === " + mThumbsUrl[position]);
-            Picasso.with(mContext)
+            Picasso.Builder  picassoBuilder = new Picasso.Builder(mContext);
+
+            picassoBuilder.indicatorsEnabled(true);
+            Picasso picasso = picassoBuilder.build();
+
+//????????Looks like this needs to be moved to a different thread from UI-thread otherwise crash:
+// 09-13 10:38:13.731    3770-3770/com.end2end.popularmovies D/IMAGE_ADAPTER﹕ 7 === http://image.tmdb.org/t/p/w185/t99CkTVNCrIFC8FvzvD2UcGcbd8.jpg
+// 09-13 10:32:04.611  29707-30988/com.end2end.popularmovies A / Looper﹕Could not create wake pipe.  errno=24
+// 09-13 10:32:04.611  29707-30988/com.end2end.popularmovies A/libc﹕ Fatal signal 6 (SIGABRT) at 0x0000740b (code=-6), thread 30988 (Picasso-Dispatc)
+            picasso
                     .load(mThumbsUrl[position])
                     .placeholder(R.drawable.loading)
                     .error(R.drawable.movie_poster_unavailable)

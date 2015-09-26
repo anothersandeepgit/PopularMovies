@@ -1,12 +1,11 @@
 package com.end2end.popularmovies;
 
+import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -38,15 +37,19 @@ import java.util.List;
 public class PopularMoviesMainActivityFragment extends Fragment {
 
     //before using this app put the API key in the variable (api_key) below
-    String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
+    //String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
+    String api_key = "3f9ba3a7cf26793007032a520fbe0cff";
 
     String sort_order = "popularity.desc";
 
     private final String LOG_TAG = PopularMoviesMainActivityFragment.class.getSimpleName();
 
     GridView gridview;
-    List<MovieNode> movieArrayList;
-    String saveInstanceState_key = "MOVIES_LIST";
+    List<MovieNode> moviePopularityArrayList;
+    List<MovieNode> movieRatingArrayList;
+    String saveInstancePopularityState_key = "MOVIES_POPULARITY_LIST";
+    String saveInstanceRatingState_key = "MOVIES_Rating_LIST";
+    String saveInstanceSortOrder_key = "SORT_ORDER";
 
     //references to our initial image
     private Integer[] mThumbsIds = { R.drawable.loading };
@@ -54,27 +57,79 @@ public class PopularMoviesMainActivityFragment extends Fragment {
     public PopularMoviesMainActivityFragment() {}
 
     @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        Log.i(LOG_TAG, "MainActivityFragment onAttach");
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        if(savedInstanceState != null) {
-            movieArrayList = (List<MovieNode>)savedInstanceState.get(saveInstanceState_key);
-        }
+        Log.v(LOG_TAG, "In onCreate");
+
         setHasOptionsMenu(true);
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelableArrayList(saveInstanceState_key, (ArrayList<? extends Parcelable>) movieArrayList);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_popular_movies_main, container, false);
+        gridview = (GridView) rootView.findViewById(R.id.gridview);
+
+        if(savedInstanceState == null) {
+            gridview.setAdapter(new ImageAdapter(getActivity(), mThumbsIds));
+        } else {
+            moviePopularityArrayList = (List<MovieNode>)savedInstanceState.get(saveInstancePopularityState_key);
+            if (moviePopularityArrayList != null) {
+                Log.v(LOG_TAG, "onCreateView moviePopularityArrayList.size()=" + " " + moviePopularityArrayList.size());
+            }
+            movieRatingArrayList = (List<MovieNode>)savedInstanceState.get(saveInstanceRatingState_key);
+            if (movieRatingArrayList != null) {
+                Log.v(LOG_TAG, "onCreateView movieRatingArrayList.size()=" + " " + movieRatingArrayList.size());
+            }
+            sort_order = savedInstanceState.getString(saveInstanceSortOrder_key);
+        }
+
+        return rootView;
     }
+
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState){
+        super.onActivityCreated(savedInstanceState);
+        Log.i(LOG_TAG, "onActivityCreated");
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        //sort_order = prefs.getString(getString(R.string.sort_criteria_key),
+        //        getString(R.string.sort_criteria_default));
+
+        if(moviePopularityArrayList != null) {
+            Log.v(LOG_TAG, "onStart" + " " + moviePopularityArrayList.size());
+        } else {
+            Log.v(LOG_TAG, "onStart");
+        }
+        updateMovies();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.i(LOG_TAG, "onResume");
+    }
+
 
     @Override
     public void onCreateOptionsMenu(Menu menu,  MenuInflater inflater) {
         inflater.inflate(R.menu.menu_popular_movies_main_fragment, menu);
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        sort_order = prefs.getString(getString(R.string.sort_criteria_key),
-                                        getString(R.string.sort_criteria_default));
-        Log.v(LOG_TAG, sort_order);
+        //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        //sort_order = prefs.getString(getString(R.string.sort_criteria_key),
+        //                                getString(R.string.sort_criteria_default));
+        Log.v(LOG_TAG, "onCreateOptionsMenu sort_order=" + sort_order);
         if (sort_order.equals("vote_average.desc")) {
             menu.findItem(R.id.sort_rating).setChecked(true);
         }
@@ -91,21 +146,23 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                 if (!item.isChecked()){
                     item.setChecked(true);
                     sort_order = "popularity.desc";
-                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                    SharedPreferences.Editor editor = prefs.edit();
-                    editor.putString(getString(R.string.sort_criteria_key), sort_order);
-                    editor.apply();
+                    //moviePopularityArrayList = null;
+                    //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                   // SharedPreferences.Editor editor = prefs.edit();
+                    //editor.putString(getString(R.string.sort_criteria_key), sort_order);
+                    //editor.apply();
                     updateMovies();
                 }
                 return true;
             case R.id.sort_rating:
                 if (!item.isChecked()) {
                     item.setChecked(true);
+                    //moviePopularityArrayList = null;
                     sort_order = "vote_average.desc";
-                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                    SharedPreferences.Editor editor = prefs.edit();
-                    editor.putString(getString(R.string.sort_criteria_key), sort_order);
-                    editor.apply();
+                    //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                    //SharedPreferences.Editor editor = prefs.edit();
+                    //editor.putString(getString(R.string.sort_criteria_key), sort_order);
+                    //editor.apply();
                     updateMovies();
                 }
                 return true;
@@ -114,28 +171,66 @@ public class PopularMoviesMainActivityFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fragment_popular_movies_main, container, false);
-        gridview = (GridView) rootView.findViewById(R.id.gridview);
-        gridview.setAdapter(new ImageAdapter(getActivity(), mThumbsIds));
-
-        return rootView;
+    public void onPause() {
+        super.onPause();
+        Log.i(LOG_TAG, "onPause");
     }
 
     @Override
-    public void onStart(){
-        super.onStart();
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        sort_order = prefs.getString(getString(R.string.sort_criteria_key),
-                getString(R.string.sort_criteria_default));
-        updateMovies();
+    public void onSaveInstanceState(Bundle outState) {
+        Log.i(LOG_TAG, "onSaveInstanceState");
+        outState.putParcelableArrayList(saveInstancePopularityState_key, (ArrayList<? extends Parcelable>) moviePopularityArrayList);
+        List<MovieNode> testArrayList = (List<MovieNode>)outState.get(saveInstancePopularityState_key);
+        if (testArrayList != null) Log.i(LOG_TAG, "onSaveInstanceState moviePopularityArrayList.size()=" + testArrayList.size());
+        outState.putParcelableArrayList(saveInstanceRatingState_key, (ArrayList<? extends Parcelable>) movieRatingArrayList);
+        List<MovieNode> test2ArrayList = (List<MovieNode>)outState.get(saveInstanceRatingState_key);
+        if (test2ArrayList != null) Log.i(LOG_TAG, "onSaveInstanceState movieRatingArrayList.size()=" + test2ArrayList.size());
+        outState.putString(saveInstanceSortOrder_key, sort_order);
     }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.i(LOG_TAG, "onStop");
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        Log.i(LOG_TAG, "onDestroyView");
+    }
+
+
+    @Override
+    public void onDestroy() {
+        Log.v(LOG_TAG, "In onDestroy of MainFragment");
+        super.onDestroy();
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        Log.i(LOG_TAG, "MainActivityFragment onDetach");
+    }
+
 
     private void updateMovies() {
 
+        Log.v(LOG_TAG, "In updateMovies()");
         FetchMoviesTask movieTask = new FetchMoviesTask();
-        movieTask.execute();
+        if (sort_order.equals("popularity.desc")) {
+            if (moviePopularityArrayList != null) {
+                movieTask.drawPosters(moviePopularityArrayList);
+            } else {
+                movieTask.execute();
+            }
+        } else if (sort_order.equals("vote_average.desc")) {
+            if (movieRatingArrayList != null) {
+                movieTask.drawPosters(movieRatingArrayList);
+            } else {
+                movieTask.execute();
+            }
+        }
     }
 
 
@@ -231,13 +326,21 @@ public class PopularMoviesMainActivityFragment extends Fragment {
         @Override
         protected void onPostExecute(final List<MovieNode> result) {
 
+            drawPosters(result);
+        }
+        public void drawPosters(final List<MovieNode> result) {
             String[] posterUrls = new String[NUM_RESULTS_PER_CALL];
+            if (sort_order.equals("popularity.desc")) {
+                moviePopularityArrayList = result;
+            } else if (sort_order.equals("vote_average.desc")) {
+                movieRatingArrayList = result;
+            }
             if (result != null) {
                 Log.v(LOG_TAG, Integer.toString(result.size()));
-                for (int i = 0; i<result.size(); i++) {
+                for (int i = 0; i < result.size(); i++) {
                     MovieNode node = result.get(i);
                     posterUrls[i] = node.getPosterPath();
-                    Log.v(LOG_TAG,posterUrls[i]);
+                    Log.v(LOG_TAG, posterUrls[i]);
                 }
                 final ImageAdapter movieImageAdapter = new ImageAdapter(getActivity(), posterUrls);
                 gridview.setAdapter(movieImageAdapter);
@@ -278,7 +381,7 @@ public class PopularMoviesMainActivityFragment extends Fragment {
             JSONArray movieArray = moviesJson.getJSONArray(MOVIE_RESULT);
 
             String[] resultStrs = new String[numFields2Extract];
-            movieArrayList = new ArrayList<MovieNode>();
+            List<MovieNode> movieArrayList = new ArrayList<MovieNode>();
 
             String BASE_POSTER_URL = "http://image.tmdb.org/t/p/";
             String POSTER_SIZE = "w185";
@@ -299,11 +402,11 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                 movieArrayList.add(node);
             }
 
-            for (int i = 0; i<movieArrayList.size(); i++) {
-                MovieNode node = movieArrayList.get(i);
+            //for (int i = 0; i<moviePopularityArrayList.size(); i++) {
+            //    MovieNode node = moviePopularityArrayList.get(i);
 
-                Log.v(LOG_TAG, node.getPosterPath());
-            }
+            //    Log.v(LOG_TAG, node.getPosterPath());
+            //}
 
             return movieArrayList;
 
