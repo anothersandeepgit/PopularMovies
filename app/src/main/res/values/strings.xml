@@ -6,4 +6,7 @@
     <string name="action_sort">Sort</string>
     <string name="sort_criteria_key">SORT_BY</string>
     <string name="sort_criteria_default">popularity.desc</string>
+    <string name="button_favorite">Mark As Favorite</string>
+    <string name="trailers">Trailers:</string>
+    <string name="reviews">Reviews</string>
 </resources>

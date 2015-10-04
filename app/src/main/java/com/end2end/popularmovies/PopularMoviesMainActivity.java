@@ -1,28 +1,37 @@
 package com.end2end.popularmovies;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class PopularMoviesMainActivity extends ActionBarActivity {
+public class PopularMoviesMainActivity extends ActionBarActivity implements PopularMoviesMainActivityFragment.Callback{
 
     private final String LOG_TAG = PopularMoviesMainActivity.class.getSimpleName();
+    private static final String DETAILFRAGMENT_TAG = "DFTAG";
+
+    private boolean mTwoPane;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_popular_movies_main);
-        Log.i(LOG_TAG, "MainActivity onCreate");
 
-        //?????uncommenting the following lines puts icon in centere of ActionBar and moves Name to right
-        //getSupportActionBar().setIcon(R.drawable.filmreviewarchive);
-        //getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME|ActionBar.DISPLAY_SHOW_TITLE);
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new PopularMoviesMainActivityFragment())
-                    .commit();
+            Log.i(LOG_TAG, "MainActivity onCreate");
+
+            //?????uncommenting the following lines puts icon in centere of ActionBar and moves Name to right
+            //getSupportActionBar().setIcon(R.drawable.filmreviewarchive);
+            //getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME|ActionBar.DISPLAY_SHOW_TITLE);
+
+        if (findViewById(R.id.detail_container) != null) {
+            // The detail container view will be present only in the large-screen layouts
+            // (res/layout-sw600dp). If this view is present, then the activity should be
+            // in two-pane mode.
+            mTwoPane = true;
+        } else {
+            mTwoPane = false;
         }
     }
 
@@ -57,9 +66,9 @@ public class PopularMoviesMainActivity extends ActionBarActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
+        //if (id == R.id.action_settings) {
+        //    return true;
+        //}
 
         return super.onOptionsItemSelected(item);
     }
@@ -96,5 +105,28 @@ public class PopularMoviesMainActivity extends ActionBarActivity {
             Log.i(LOG_TAG, "MainActivity onRestoreInstanceState savedInstanceState!=null");
         }
         super.onRestoreInstanceState(savedInstanceState);
+    }
+
+    public void onItemSelected(MovieNode movieNode, boolean ignore){
+        if (mTwoPane) {
+            // In two-pane mode, show the detail view in this activity by
+            // adding or replacing the detail fragment using a
+            // fragment transaction.
+            Bundle args = new Bundle();
+            args.putParcelable(PopularMoviesDetailFragment.MOVIE_PASSED, movieNode);
+
+            PopularMoviesDetailFragment detailFragment = new PopularMoviesDetailFragment();
+            detailFragment.setArguments(args);
+
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.detail_container, detailFragment, DETAILFRAGMENT_TAG)
+                    .commit();
+        } else {
+            if (!ignore) {
+                Intent detailIntent = new Intent(this, PopularMoviesDetailActivity.class);
+                detailIntent.putExtra("MovieNode", movieNode);
+                startActivity(detailIntent);
+            }
+        }
     }
 }

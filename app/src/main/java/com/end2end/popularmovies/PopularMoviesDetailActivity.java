@@ -14,7 +14,7 @@ public class PopularMoviesDetailActivity extends ActionBarActivity {
         setContentView(R.layout.activity_popular_movies_detail);
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new PopularMoviesDetailFragment())
+                    .add(R.id.detail_container, new PopularMoviesDetailFragment())
                     .commit();
         }
     }

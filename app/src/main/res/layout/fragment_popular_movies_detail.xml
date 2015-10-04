@@ -12,37 +12,64 @@
 
 
         <TextView
+            android:background="@color/accent_material_light"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
+            android:layout_height="100dp"
+            android:gravity="center"
             android:text="New Text"
             android:textSize="@dimen/abc_text_size_title_material"
             android:id="@+id/titleTextView"
-             />
+            android:layout_gravity="center" />
 
 
-    <TextView
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:id="@+id/posterImageView"
+            android:src="@drawable/filmreviewarchive_tiny"
+            android:layout_weight="1"
+            />
+
+        <LinearLayout
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
             android:text="New Text"
+            android:gravity="left"
             android:textSize="@dimen/abc_text_size_subhead_material"
             android:id="@+id/releaseDateTextView"
             />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
             android:text="New Text"
+            android:gravity="left"
             android:textSize="@dimen/abc_text_size_subhead_material"
             android:id="@+id/voteAverageTextView"
-             />
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="400dp"
-        android:id="@+id/posterImageView"
-        android:src="@drawable/filmreviewarchive_tiny"
-        />
+            />
+            <Button
+                android:layout_width="wrap_content"
+                android:background="@color/accent_material_light"
+                android:layout_height="wrap_content"
+                android:text="@string/button_favorite"
+                android:id="@+id/favoriteButton"
+                android:layout_gravity="center_vertical"
+                 />
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -52,6 +79,45 @@
         android:textSize="@dimen/abc_text_size_subhead_material"
         android:id="@+id/summaryTextView"
         />
+
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="2dp"
+        android:background="#c0c0c0"/>
+    <LinearLayout
+        android:id="@+id/layout_trailers"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="@string/trailers"
+            android:layout_gravity="center_horizontal" />
+
+    </LinearLayout>
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="2dp"
+        android:background="#c0c0c0"/>
+    <LinearLayout
+        android:id="@+id/layout_reviews"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="@string/reviews"
+            android:layout_gravity="center_horizontal" />
+
+    </LinearLayout>
 
 </LinearLayout>
     </ScrollView>

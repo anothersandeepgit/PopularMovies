@@ -1,11 +1,12 @@
 package com.end2end.popularmovies;
 
 import android.app.Activity;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -37,7 +39,7 @@ import java.util.List;
 public class PopularMoviesMainActivityFragment extends Fragment {
 
     //before using this app put the API key in the variable (api_key) below
-    String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
+    final static String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
 
 
     String sort_order = "popularity.desc";
@@ -47,6 +49,8 @@ public class PopularMoviesMainActivityFragment extends Fragment {
     GridView gridview;
     List<MovieNode> moviePopularityArrayList;
     List<MovieNode> movieRatingArrayList;
+    List<MovieNode> movieFavoriteArrayList;
+    String saveInstanceFavoriteState_key = "MOVIES_FAVORITE_LIST";
     String saveInstancePopularityState_key = "MOVIES_POPULARITY_LIST";
     String saveInstanceRatingState_key = "MOVIES_Rating_LIST";
     String saveInstanceSortOrder_key = "SORT_ORDER";
@@ -54,6 +58,12 @@ public class PopularMoviesMainActivityFragment extends Fragment {
     //references to our initial image
     private Integer[] mThumbsIds = { R.drawable.loading };
 
+    public interface Callback {
+        /**
+         * DetailFragmentCallback for when an item has been selected.
+         */
+        public void onItemSelected(MovieNode movieNode, boolean ignore);
+    }
     public PopularMoviesMainActivityFragment() {}
 
     @Override
@@ -87,6 +97,10 @@ public class PopularMoviesMainActivityFragment extends Fragment {
             if (movieRatingArrayList != null) {
                 Log.v(LOG_TAG, "onCreateView movieRatingArrayList.size()=" + " " + movieRatingArrayList.size());
             }
+            movieFavoriteArrayList = (List<MovieNode>)savedInstanceState.get(saveInstanceFavoriteState_key);
+            if (movieFavoriteArrayList != null) {
+                Log.v(LOG_TAG, "onCreateView movieFavoriteArrayList.size()=" + " " + movieFavoriteArrayList.size());
+            }
             sort_order = savedInstanceState.getString(saveInstanceSortOrder_key);
         }
 
@@ -112,7 +126,7 @@ public class PopularMoviesMainActivityFragment extends Fragment {
         } else {
             Log.v(LOG_TAG, "onStart");
         }
-        updateMovies();
+        updateMovies("");
     }
 
     @Override
@@ -132,6 +146,8 @@ public class PopularMoviesMainActivityFragment extends Fragment {
         Log.v(LOG_TAG, "onCreateOptionsMenu sort_order=" + sort_order);
         if (sort_order.equals("vote_average.desc")) {
             menu.findItem(R.id.sort_rating).setChecked(true);
+        } else if (sort_order.equals("")){
+            menu.findItem(R.id.sort_favorites).setChecked(true);
         }
     }
     @Override
@@ -151,7 +167,7 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                    // SharedPreferences.Editor editor = prefs.edit();
                     //editor.putString(getString(R.string.sort_criteria_key), sort_order);
                     //editor.apply();
-                    updateMovies();
+                    updateMovies("");
                 }
                 return true;
             case R.id.sort_rating:
@@ -163,7 +179,19 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                     //SharedPreferences.Editor editor = prefs.edit();
                     //editor.putString(getString(R.string.sort_criteria_key), sort_order);
                     //editor.apply();
-                    updateMovies();
+                    updateMovies("");
+                }
+                return true;
+            case R.id.sort_favorites:
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                String movieFavoriteString = prefs.getString(saveInstanceFavoriteState_key, null);
+                if (movieFavoriteString != null){
+                    if (!item.isChecked()) {
+                        item.setChecked(true);
+                        sort_order = "";
+                        updateMovies(movieFavoriteString);
+                    }
+                    Toast.makeText(getActivity(), movieFavoriteString, Toast.LENGTH_SHORT).show();
                 }
                 return true;
         }
@@ -184,8 +212,16 @@ public class PopularMoviesMainActivityFragment extends Fragment {
         if (testArrayList != null) Log.i(LOG_TAG, "onSaveInstanceState moviePopularityArrayList.size()=" + testArrayList.size());
         outState.putParcelableArrayList(saveInstanceRatingState_key, (ArrayList<? extends Parcelable>) movieRatingArrayList);
         List<MovieNode> test2ArrayList = (List<MovieNode>)outState.get(saveInstanceRatingState_key);
-        if (test2ArrayList != null) Log.i(LOG_TAG, "onSaveInstanceState movieRatingArrayList.size()=" + test2ArrayList.size());
+        if (test2ArrayList != null)
+            Log.i(LOG_TAG, "onSaveInstanceState movieRatingArrayList.size()=" + test2ArrayList.size());
+        outState.putParcelableArrayList(saveInstanceFavoriteState_key, (ArrayList<? extends Parcelable>) movieFavoriteArrayList);
+        List<MovieNode> test3ArrayList = (List<MovieNode>)outState.get(saveInstanceFavoriteState_key);
+        if (test3ArrayList != null)
+            Log.i(LOG_TAG, "onSaveInstanceState movieFavoriteArrayList.size()=" + test3ArrayList.size());
         outState.putString(saveInstanceSortOrder_key, sort_order);
+        String testSortOrder = outState.getString(saveInstanceSortOrder_key);
+        Log.i(LOG_TAG, "onSaveInstanceState sort_order=" + testSortOrder + "----");
+
     }
 
     @Override
@@ -214,7 +250,7 @@ public class PopularMoviesMainActivityFragment extends Fragment {
     }
 
 
-    private void updateMovies() {
+    private void updateMovies(String listOfIds) {
 
         Log.v(LOG_TAG, "In updateMovies()");
         FetchMoviesTask movieTask = new FetchMoviesTask();
@@ -230,26 +266,69 @@ public class PopularMoviesMainActivityFragment extends Fragment {
             } else {
                 movieTask.execute();
             }
+        } else if (sort_order.equals("")) {
+            if (movieFavoriteArrayList != null) {
+                movieTask.drawPosters(movieFavoriteArrayList);
+            } else {
+                movieTask.execute(listOfIds);
+            }
         }
     }
-
-
     public class FetchMoviesTask extends AsyncTask<String, Void, List<MovieNode>> {
 
         private final String LOG_TAG = FetchMoviesTask.class.getSimpleName();
-
-        final String MOVIES_BASE_URL = "https://api.themoviedb.org/3/discover/movie?";
+        final static String BASE_URL = "https://api.themoviedb.org/3/";
+        final String MOVIES_BASE_URL = BASE_URL + "discover/movie?";
         final String SORT_PARAM = "sort_by";
         final String API_KEY_PARAM = "api_key";
+        final String ID_MOVIE_BASE_URL = BASE_URL + "movie?";
 
         @Override
         protected List<MovieNode> doInBackground(String... params) {
+
+            // Will contain the raw JSON response as a string.
+            String moviesJsonStr = null;
+            Log.i(LOG_TAG, "params.length = " + params.length);
+            if (params.length == 0) {
+                Uri builtUri = Uri.parse(MOVIES_BASE_URL).buildUpon()
+                        .appendQueryParameter(SORT_PARAM, sort_order)
+                        .appendQueryParameter(API_KEY_PARAM, api_key)
+                        .build();
+                String uriString = builtUri.toString();
+                moviesJsonStr = getJsonMovies(uriString);
+            } else {
+                String favoriteMoviesIds = params[0];
+                //updateMovies(movieFavoriteString);
+                String[] movieIds = favoriteMoviesIds.split("_");
+                moviesJsonStr = "{\"results\":[";
+                for (String movieId: movieIds) {
+                    Uri builtUri = Uri.parse(ID_MOVIE_BASE_URL).buildUpon().appendPath(movieId)
+                            .appendQueryParameter(SORT_PARAM, sort_order)
+                            .appendQueryParameter(API_KEY_PARAM, api_key)
+                            .build();
+                    String uriString = builtUri.toString();
+                    Log.i(LOG_TAG, "Favorite Id URL = " + uriString);
+                    moviesJsonStr += getJsonMovies(uriString) + ",";
+                }
+                moviesJsonStr = moviesJsonStr.substring(0,moviesJsonStr.length() -1) + "]}";
+                Log.i(LOG_TAG, "Total of Favorite JSON = " + moviesJsonStr);
+            }
+
+            try {
+                return getMoviesDataFromJson(moviesJsonStr);
+            }catch (JSONException e) {
+                Log.e(LOG_TAG, e.getMessage(), e);
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        private String getJsonMovies(String uriString){
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
 
-            // Will contain the raw JSON response as a string.
             String moviesJsonStr = null;
 
             try {
@@ -257,45 +336,40 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                 // Possible parameters are avaiable at OWM's forecast API page, at
                 // http://openweathermap.org/API#forecast
 
-                Uri builtUri = Uri.parse(MOVIES_BASE_URL).buildUpon()
-                        .appendQueryParameter(SORT_PARAM, sort_order)
-                        .appendQueryParameter(API_KEY_PARAM, api_key)
-                        .build();
+                    //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&mode=json&units=metric&cnt=7");
+                    URL url = new URL(uriString);
+                    Log.v(LOG_TAG, "Built URI: " + uriString);
+                    // Create the request to OpenWeatherMap, and open the connection
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.setRequestProperty("Accept", "application/json");
+                    urlConnection.connect();
+                    Log.v(LOG_TAG, "created connection");
+                    // Read the input stream into a String
+                    InputStream inputStream = urlConnection.getInputStream();
+                    StringBuffer buffer = new StringBuffer();
+                    Log.v(LOG_TAG, "created buffer");
+                    if (inputStream == null) {
+                        // Nothing to do.
+                        return null;
+                    }
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
 
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                        // But it does make debugging a *lot* easier if you print out the completed
+                        // buffer for debugging.
+                        buffer.append(line + "\n");
+                    }
 
-                //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&mode=json&units=metric&cnt=7");
-                URL url = new URL(builtUri.toString());
-                Log.v(LOG_TAG, "Built URI: " + builtUri.toString());
-                // Create the request to OpenWeatherMap, and open the connection
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.setRequestProperty("Accept", "application/json");
-                urlConnection.connect();
-                Log.v(LOG_TAG, "created connection");
-                // Read the input stream into a String
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                Log.v(LOG_TAG, "created buffer");
-                if (inputStream == null) {
-                    // Nothing to do.
-                    return null;
-                }
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line + "\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                moviesJsonStr = buffer.toString();
-                Log.v(LOG_TAG, "Movies JSON string: " + moviesJsonStr);
+                    if (buffer.length() == 0) {
+                        // Stream was empty.  No point in parsing.
+                        return null;
+                    }
+                    moviesJsonStr = buffer.toString();
+                    Log.v(LOG_TAG, "Movies JSON string: " + moviesJsonStr);
+                    return moviesJsonStr;
             } catch (IOException e) {
                 Log.e("...MainFragment", "Error ", e);
                 // If the code didn't successfully get the movies data, there's no point in attemping
@@ -313,32 +387,32 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                     }
                 }
             }
-            try {
-                return getMoviesDataFromJson(moviesJsonStr);
-            }catch (JSONException e) {
-                Log.e(LOG_TAG, e.getMessage(), e);
-                e.printStackTrace();
-            }
-            return null;
         }
 
-        private final int NUM_RESULTS_PER_CALL = 20;
+        //private final int NUM_RESULTS_PER_CALL = 20;
         @Override
         protected void onPostExecute(final List<MovieNode> result) {
 
             drawPosters(result);
         }
         public void drawPosters(final List<MovieNode> result) {
-            String[] posterUrls = new String[NUM_RESULTS_PER_CALL];
+            //String[] posterUrls = new String[NUM_RESULTS_PER_CALL];
+            MovieNode firstNode = null;
+            String[] posterUrls = new String[result.size()];
             if (sort_order.equals("popularity.desc")) {
                 moviePopularityArrayList = result;
             } else if (sort_order.equals("vote_average.desc")) {
                 movieRatingArrayList = result;
+            } else if (sort_order.equals("")) {
+                movieFavoriteArrayList = result;
             }
             if (result != null) {
                 Log.v(LOG_TAG, Integer.toString(result.size()));
                 for (int i = 0; i < result.size(); i++) {
                     MovieNode node = result.get(i);
+                    if (i == 0) {
+                        firstNode = node;
+                    }
                     posterUrls[i] = node.getPosterPath();
                     Log.v(LOG_TAG, posterUrls[i]);
                 }
@@ -350,13 +424,17 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
                         MovieNode movieNode = result.get(position);
+                        Callback callback = (Callback) getActivity();
+                        callback.onItemSelected(movieNode, false);
 
-                        Intent detailIntent = new Intent(getActivity(), PopularMoviesDetailActivity.class);
-                        detailIntent.putExtra("MovieNode", movieNode);
-                        startActivity(detailIntent);
+                        //Intent detailIntent = new Intent(getActivity(), PopularMoviesDetailActivity.class);
+                        //detailIntent.putExtra("MovieNode", movieNode);
+                        //startActivity(detailIntent);
                     }
                 });
             }
+            Callback callback = (Callback) getActivity();
+            callback.onItemSelected(firstNode, true);
         }
         /**
          * Take the String representing the complete forecast in JSON Format and
@@ -369,7 +447,8 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                 throws JSONException {
 
             // These are the names of the JSON objects that need to be extracted.
-            final int numFields2Extract = 5;
+            //final int numFields2Extract = 5;
+            final String MOVIE_ID = "id";
             final String MOVIE_RESULT = "results";
             final String MOVIE_TITLE = "original_title";
             final String MOVIE_SUMMARY = "overview";
@@ -380,7 +459,7 @@ public class PopularMoviesMainActivityFragment extends Fragment {
             JSONObject moviesJson = new JSONObject(moviesJsonStr);
             JSONArray movieArray = moviesJson.getJSONArray(MOVIE_RESULT);
 
-            String[] resultStrs = new String[numFields2Extract];
+            //String[] resultStrs = new String[numFields2Extract];
             List<MovieNode> movieArrayList = new ArrayList<MovieNode>();
 
             String BASE_POSTER_URL = "http://image.tmdb.org/t/p/";
@@ -391,13 +470,14 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                 // Get the JSON object representing the day
                 JSONObject movie = movieArray.getJSONObject(i);
 
+                String id = movie.getString(MOVIE_ID);
                 String title = movie.getString(MOVIE_TITLE);
                 String summary = movie.getString(MOVIE_SUMMARY);
                 String release_date = movie.getString(MOVIE_RELEASE_DATE);
                 String poster_path = BASE_POSTER_URL + POSTER_SIZE +  movie.getString(MOVIE_POSTER_PATH);
                 String vote_average = movie.getString(MOVIE_VOTE_AVERAGE);
 
-                MovieNode node = new MovieNode(title, summary, release_date, poster_path, vote_average);
+                MovieNode node = new MovieNode(id, title, summary, release_date, poster_path, vote_average);
 
                 movieArrayList.add(node);
             }
@@ -413,4 +493,6 @@ public class PopularMoviesMainActivityFragment extends Fragment {
         }
 
     }
+
+
 }

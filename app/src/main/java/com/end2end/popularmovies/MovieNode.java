@@ -7,13 +7,15 @@ import android.os.Parcelable;
  * Created by lendevsanadmin on 8/22/2015.
  */
 public class MovieNode implements Parcelable {
+    String id;
     String title;
     String summary;
     String releaseDate;
     String posterPath;
     String voteAverage;
 
-    public MovieNode(String title, String summary, String releaseDate, String posterPath, String voteAverage) {
+    public MovieNode(String id, String title, String summary, String releaseDate, String posterPath, String voteAverage) {
+        this.id = id;
         this.title = title;
         this.summary = summary;
         this.releaseDate = releaseDate;
@@ -22,22 +24,25 @@ public class MovieNode implements Parcelable {
     }
 
     public MovieNode (Parcel in) {
-        String[] data = new String[5];
+        String[] data = new String[6];
 
         in.readStringArray(data);
-        this.title = data[0];
-        this.summary = data[1];
-        this.releaseDate = data[2];
-        this.posterPath = data[3];
-        this.voteAverage = data[4];
+        this.id = data[0];
+        this.title = data[1];
+        this.summary = data[2];
+        this.releaseDate = data[3];
+        this.posterPath = data[4];
+        this.voteAverage = data[5];
     }
     @Override
     public int describeContents(){
         return 0;
     }
+
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeStringArray(new String[] {this.title, this.summary, this.releaseDate, this.posterPath, this.voteAverage});
+        dest.writeStringArray(new String[] {this.id, this.title, this.summary,
+                                            this.releaseDate, this.posterPath, this.voteAverage});
     }
     public static final Parcelable.Creator CREATOR = new Parcelable.Creator(){
         public MovieNode createFromParcel(Parcel in) {
@@ -47,6 +52,13 @@ public class MovieNode implements Parcelable {
             return new MovieNode[size];
         }
     };
+
+    public String getId() {
+        return id;
+    }
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public String getTitle() {
         return title;
