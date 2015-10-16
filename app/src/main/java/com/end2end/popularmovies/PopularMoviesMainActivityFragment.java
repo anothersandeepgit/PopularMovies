@@ -123,10 +123,10 @@ public class PopularMoviesMainActivityFragment extends Fragment {
                 return true;
             case R.id.sort_favorites:
                 movieFavoriteArrayList = new ArrayList<MovieNode>();
-                sortOrder = "favorite.local";
                 isSaveInstanceState = false;
                 DBUtilities.fetchMoviesFromDB(getActivity(), (ArrayList<MovieNode>) movieFavoriteArrayList);
                 if (movieFavoriteArrayList.size() != 0){
+                    sortOrder = "favorite.local";
                     if (!item.isChecked()) {
                         item.setChecked(true);
                         Utilities.drawPosters(getActivity(), gridview, movieFavoriteArrayList, isSaveInstanceState);
