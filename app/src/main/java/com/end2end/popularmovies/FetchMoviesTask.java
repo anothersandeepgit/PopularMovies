@@ -16,8 +16,7 @@ import java.util.List;
 public class FetchMoviesTask extends AsyncTask<String, Void, Void> {
 
     //before using this app put the API key in the variable (api_key) below
-    //final static String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
-    final static String api_key = "3f9ba3a7cf26793007032a520fbe0cff";
+    final static String api_key = "PLACEHOLDER__FOR__ACTUAL__API__KEY";
 
     private final String LOG_TAG = FetchMoviesTask.class.getSimpleName();
     final static String BASE_URL = "https://api.themoviedb.org/3/";
