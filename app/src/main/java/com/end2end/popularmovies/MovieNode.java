@@ -23,31 +23,37 @@ public class MovieNode implements Parcelable {
         this.voteAverage = voteAverage;
     }
 
-    public MovieNode (Parcel in) {
-        String[] data = new String[6];
-
-        in.readStringArray(data);
-        this.id = data[0];
-        this.title = data[1];
-        this.summary = data[2];
-        this.releaseDate = data[3];
-        this.posterPath = data[4];
-        this.voteAverage = data[5];
-    }
-    @Override
-    public int describeContents(){
-        return 0;
+    protected MovieNode(Parcel in) {
+        id = in.readString();
+        title = in.readString();
+        summary = in.readString();
+        releaseDate = in.readString();
+        posterPath = in.readString();
+        voteAverage = in.readString();
     }
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeStringArray(new String[] {this.id, this.title, this.summary,
-                                            this.releaseDate, this.posterPath, this.voteAverage});
+        dest.writeString(id);
+        dest.writeString(title);
+        dest.writeString(summary);
+        dest.writeString(releaseDate);
+        dest.writeString(posterPath);
+        dest.writeString(voteAverage);
     }
-    public static final Parcelable.Creator CREATOR = new Parcelable.Creator(){
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<MovieNode> CREATOR = new Creator<MovieNode>() {
+        @Override
         public MovieNode createFromParcel(Parcel in) {
             return new MovieNode(in);
         }
+
+        @Override
         public MovieNode[] newArray(int size) {
             return new MovieNode[size];
         }

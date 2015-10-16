@@ -17,6 +17,7 @@ public class MovieContract {
     public static final String PATH_MOVIE = "movie";
 
     public static final class MovieEntry implements BaseColumns {
+
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIE).build();
 
         public static final String CONTENT_TYPE =
@@ -37,7 +38,9 @@ public class MovieContract {
             return ContentUris.withAppendedId(CONTENT_URI, id);
         }
     }
+
     public static final class TrailerEntry implements BaseColumns {
+
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_TRAILER).build();
 
         public static final String CONTENT_TYPE =
@@ -49,23 +52,26 @@ public class MovieContract {
 
         // Column with the foreign key into the location table.
         public static final String COLUMN_MOVIE_KEY = "movie_id";
-
-        public static final String COLUMN_TRAILER_KEY = "key";
+        public static final String COLUMN_TRAILER_YOUTUBE_PATH = "youtube_path";
         public static final String COLUMN_TRAILER_NAME = "name";
 
         public static Uri buildTrailerUri(long id) {
             return ContentUris.withAppendedId(CONTENT_URI, id);
         }
-        //.../trailer/movie/#
+
+        // content://<authority>/trailer/movie/#
         public static Uri buildTrailerForMovie(long movieId) {
             return CONTENT_URI.buildUpon().appendPath(MovieEntry.TABLE_NAME)
                     .appendPath(Long.toString(movieId)).build();
         }
+
         public static String getMovieFromUri(Uri uri) {
             return uri.getPathSegments().get(2);
         }
     }
+
     public static final class ReviewEntry implements BaseColumns {
+
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_REVIEW).build();
 
         public static final String CONTENT_TYPE =
@@ -77,18 +83,19 @@ public class MovieContract {
 
         // Column with the foreign key into the location table.
         public static final String COLUMN_MOVIE_KEY = "movie_id";
-
         public static final String COLUMN_REVIEW_AUTHOR = "author";
         public static final String COLUMN_REVIEW_CONTENT = "content";
 
         public static Uri buildReviewUri(long id) {
             return ContentUris.withAppendedId(CONTENT_URI, id);
         }
-        //.../review/movie/#
+
+        // contnt://<authority>/review/movie/#
         public static Uri buildReviewForMovie(long movieId) {
             return CONTENT_URI.buildUpon().appendPath(MovieEntry.TABLE_NAME)
                     .appendPath(Long.toString(movieId)).build();
         }
+
         public static String getMovieFromUri(Uri uri) {
             return uri.getPathSegments().get(2);
         }

@@ -9,4 +9,6 @@
     <string name="button_favorite">Mark As Favorite</string>
     <string name="trailers">Trailers:</string>
     <string name="reviews">Reviews</string>
+    <string name="action_share">Share</string>
 </resources>
+

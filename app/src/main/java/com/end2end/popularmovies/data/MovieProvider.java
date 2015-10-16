@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 
 /**
@@ -13,7 +14,7 @@ import android.net.Uri;
 public class MovieProvider extends ContentProvider  {
 
     private static final UriMatcher sUriMatcher = buildUriMatcher();
-    MovieDbHelper mOpenHelper;
+    MovieDBHelper mOpenHelper;
 
     static final int MOVIE = 100;
     static final int TRAILER = 200;
@@ -21,21 +22,66 @@ public class MovieProvider extends ContentProvider  {
     static final int REVIEW = 300;
     static final int REVIEW_FOR_MOVIE = 301;
 
-    //review.movie_id = ?
-    private static final String sReviewForMovieSelection =
-            MovieContract.ReviewEntry.TABLE_NAME+
-                    "." + MovieContract.ReviewEntry.COLUMN_MOVIE_KEY + " = ? ";
+    private static final SQLiteQueryBuilder sTrailerForMovieQueryBuilder;
+    private static final SQLiteQueryBuilder sReviewForMovieQueryBuilder;
+
+    static{
+        sTrailerForMovieQueryBuilder = new SQLiteQueryBuilder();
+
+        //This is an inner join which looks like
+        //weather INNER JOIN location ON weather.location_id = location._id
+        sTrailerForMovieQueryBuilder.setTables(
+                MovieContract.MovieEntry.TABLE_NAME + " INNER JOIN " +
+                        MovieContract.TrailerEntry.TABLE_NAME +
+                        " ON " + MovieContract.TrailerEntry.TABLE_NAME +
+                        "." + MovieContract.TrailerEntry.COLUMN_MOVIE_KEY +
+                        " = " + MovieContract.MovieEntry.TABLE_NAME +
+                        "." + MovieContract.MovieEntry._ID);
+
+        sReviewForMovieQueryBuilder = new SQLiteQueryBuilder();
+        sReviewForMovieQueryBuilder.setTables(
+                MovieContract.MovieEntry.TABLE_NAME + " INNER JOIN " +
+                        MovieContract.ReviewEntry.TABLE_NAME +
+                        " ON " + MovieContract.ReviewEntry.TABLE_NAME +
+                        "." + MovieContract.ReviewEntry.COLUMN_MOVIE_KEY +
+                        " = " + MovieContract.MovieEntry.TABLE_NAME +
+                        "." + MovieContract.MovieEntry._ID);
+    }
+
     //trailer.movie_id = ?
     private static final String sTrailerForMovieSelection =
-            MovieContract.TrailerEntry.TABLE_NAME+
+            MovieContract.TrailerEntry.TABLE_NAME +
                     "." + MovieContract.TrailerEntry.COLUMN_MOVIE_KEY + " = ? ";
 
+    //review.movie_id = ?
+    private static final String sReviewForMovieSelection =
+            MovieContract.ReviewEntry.TABLE_NAME +
+                    "." + MovieContract.ReviewEntry.COLUMN_MOVIE_KEY + " = ? ";
+
+    Cursor getTrailerForMovie(Uri uri, String[] projection, String sortOrder){
+        String movieId = MovieContract.TrailerEntry.getMovieFromUri(uri);
+        String selection = sTrailerForMovieSelection;
+        String[] selectionArgs = new String[]{movieId};
+
+        return sTrailerForMovieQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                 projection, selection, selectionArgs, null, null, sortOrder);
+    }
+
+    Cursor getReviewForMovie(Uri uri, String[] projection, String sortOrder){
+        String movieId = MovieContract.ReviewEntry.getMovieFromUri(uri);
+        String selection = sReviewForMovieSelection;
+        String[] selectionArgs = new String[]{movieId};
+
+        return sReviewForMovieQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                 projection, selection, selectionArgs, null, null, sortOrder);
+    }
 
     @Override
     public boolean onCreate() {
-        mOpenHelper = new MovieDbHelper(getContext());
+        mOpenHelper = new MovieDBHelper(getContext());
         return true;
     }
+
     @Override
     public String getType(Uri uri) {
 
@@ -57,6 +103,7 @@ public class MovieProvider extends ContentProvider  {
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
     }
+
     static UriMatcher buildUriMatcher() {
         // I know what you're thinking.  Why create a UriMatcher when you can use regular
         // expressions instead?  Because you're not crazy, that's why.
@@ -71,11 +118,12 @@ public class MovieProvider extends ContentProvider  {
         matcher.addURI(authority, MovieContract.PATH_MOVIE, MOVIE);
         matcher.addURI(authority, MovieContract.PATH_TRAILER, TRAILER);
         matcher.addURI(authority, MovieContract.PATH_REVIEW, REVIEW);
-        matcher.addURI(authority, MovieContract.PATH_REVIEW + MovieContract.PATH_MOVIE + "/#", REVIEW_FOR_MOVIE);
-        matcher.addURI(authority, MovieContract.PATH_TRAILER + MovieContract.PATH_MOVIE  + "/#", TRAILER_FOR_MOVIE);
+        matcher.addURI(authority, MovieContract.PATH_REVIEW + "/" + MovieContract.PATH_MOVIE + "/#", REVIEW_FOR_MOVIE);
+        matcher.addURI(authority, MovieContract.PATH_TRAILER + "/" + MovieContract.PATH_MOVIE  + "/#", TRAILER_FOR_MOVIE);
 
         return matcher;
     }
+
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
                         String sortOrder) {
@@ -139,22 +187,6 @@ public class MovieProvider extends ContentProvider  {
         retCursor.setNotificationUri(getContext().getContentResolver(), uri);
         return retCursor;
     }
-    Cursor getTrailerForMovie(Uri uri, String[] projection, String sortOrder){
-        String movieId = MovieContract.TrailerEntry.getMovieFromUri(uri);
-        String selection = sTrailerForMovieSelection;
-        String[] selectionArgs = new String[]{movieId};
-
-        return mOpenHelper.getReadableDatabase().query(
-                MovieContract.TrailerEntry.TABLE_NAME, projection, selection, selectionArgs, null, null, sortOrder);
-    }
-    Cursor getReviewForMovie(Uri uri, String[] projection, String sortOrder){
-        String movieId = MovieContract.ReviewEntry.getMovieFromUri(uri);
-        String selection = sReviewForMovieSelection;
-        String[] selectionArgs = new String[]{movieId};
-
-        return mOpenHelper.getReadableDatabase().query(
-                MovieContract.ReviewEntry.TABLE_NAME, projection, selection, selectionArgs, null, null, sortOrder);
-    }
 
     @Override
     public Uri insert(Uri uri, ContentValues values) {
@@ -194,6 +226,10 @@ public class MovieProvider extends ContentProvider  {
         return returnUri;
     }
 
+    /*
+    ????For integrity constraint I guess before we delete a movie entry,
+    we have to delete "review" and "trailer" table entries for the deleted movieId????????
+     */
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();

@@ -70,15 +70,12 @@ public class ImageAdapter extends BaseAdapter {
                     .error(R.drawable.movie_poster_unavailable)
                     .into(imageView);
         }else {
-            imageView.setImageResource(R.drawable.loading);
+            imageView.setImageResource(mThumbsIds[0]);
             imageView.setLayoutParams(new GridView.LayoutParams(400, 400));
-            imageView.setTranslationX(40);
+            imageView.setTranslationX(80);
             imageView.setTranslationY(40);
-            //imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            imageView.setPadding(20, 20, 20, 20);
+            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         }
         return imageView;
     }
-
-
 }

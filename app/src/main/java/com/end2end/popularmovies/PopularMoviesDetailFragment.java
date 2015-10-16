@@ -1,14 +1,17 @@
 package com.end2end.popularmovies;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -24,12 +27,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -44,8 +41,6 @@ public class PopularMoviesDetailFragment extends Fragment {
     String jsonResult;
     String saveInstanceFavoriteState_key = "MOVIES_FAVORITE_LIST";
     MovieNode  movie;
-    MovieNode movie2;
-    MovieNode movie3;
     List<MovieNode> movieFavoriteArrayList;
 
     ImageView posterImageView;
@@ -59,19 +54,37 @@ public class PopularMoviesDetailFragment extends Fragment {
 
     View rootView;
 
+    private boolean movieNull = true;
     CountDownLatch latch = null;
     boolean dynamicViewsAdded = false;
+    private String mshareName = null;
+    private String mshareYouTubeURLPath = null;
+    ShareActionProvider mShareActionProvider;
 
     public PopularMoviesDetailFragment() {}
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState){
+        super.onCreate(savedInstanceState);
 
+        Log.i(LOG_TAG, "DetailFragment onCreate");
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
+        Log.i(LOG_TAG, "DetailFragment onCreateView");
         Bundle arguments = getArguments();
         if (arguments != null) {
+            movieNull = false;
             movie = arguments.getParcelable(PopularMoviesDetailFragment.MOVIE_PASSED);
+        } else {
+            movieNull = true;
         }
+
+        mshareName = null;
+        mshareYouTubeURLPath = null;
 
         rootView = inflater.inflate(R.layout.fragment_popular_movies_detail, container, false);
         posterImageView = (ImageView) rootView.findViewById(R.id.posterImageView);
@@ -85,23 +98,13 @@ public class PopularMoviesDetailFragment extends Fragment {
         favoriteButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                String movieFavoriteString = prefs.getString(saveInstanceFavoriteState_key, null);
-
-
-                SharedPreferences.Editor editor = prefs.edit();
-                String movieIds = prefs.getString(saveInstanceFavoriteState_key, "");
-                String toAdd = movie.getId();
-                Log.d(LOG_TAG, "Favorite ID = " + toAdd);
-                if (!movieIds.contains(movie.getId())) {
-                    if (!movieIds.equals("")){
-                        toAdd = "_" + toAdd;
-                    }
-                    editor.putString(saveInstanceFavoriteState_key, movieIds + toAdd);
-                    Toast.makeText(getActivity(), movieIds + toAdd, Toast.LENGTH_SHORT).show();
-                    editor.apply();
+                int movieIdInteger = Integer.valueOf(movie.getId());
+                if (!DBUtilities.isMovieInDB(getActivity(), movie)) {
+                    long movieId = DBUtilities.insertMovieInDB(getActivity(), movie);
+                    Toast.makeText(getActivity(), "Added favorite movie: " + movie.getTitle(), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getActivity(), "***movie already in favorite list***", Toast.LENGTH_SHORT).show();
                 }
-
             }
         });
 
@@ -109,149 +112,205 @@ public class PopularMoviesDetailFragment extends Fragment {
     }
 
     @Override
+    public void onCreateOptionsMenu(Menu menu,  MenuInflater inflater) {
+
+        inflater.inflate(R.menu.menu_popular_movies_detail_fragment, menu);
+
+        Log.d(LOG_TAG, "onCreateOptionsMenu");
+        MenuItem menuItem = menu.findItem(R.id.action_share);
+        mShareActionProvider =
+                (ShareActionProvider) MenuItemCompat.getActionProvider(menuItem);
+        if(mShareActionProvider != null) {
+            Intent shareMovieTrailerIntent = createShareMovieTrailerIntent();
+            if (shareMovieTrailerIntent != null) {
+                Log.d(LOG_TAG, "shareMovieTrailerIntent set to share!");
+                mShareActionProvider.setShareIntent(shareMovieTrailerIntent);
+            }else {
+                mShareActionProvider.setShareIntent(null);
+                Log.d(LOG_TAG, "No trailer to share!");
+            }
+        } else{
+            Log.d(LOG_TAG, "Share Action Provider is null?");
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+
+        switch (id) {
+            case R.id.action_share:
+
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private Intent createShareMovieTrailerIntent() {
+        if (mshareYouTubeURLPath != null) {
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+            shareIntent.setType("text/plain");
+
+            shareIntent.putExtra(Intent.EXTRA_TEXT, mshareName + " --TRAILER--: " + mshareYouTubeURLPath);
+            return shareIntent;
+        }else {
+            return null;
+        }
+    }
+
+    @Override
+    public void onPause() {
+        Log.i(LOG_TAG, "onPause");
+        mshareYouTubeURLPath = null;
+        mshareName = null;
+        super.onPause();
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
 
+        mshareYouTubeURLPath = null;
+        Log.i(LOG_TAG, "onResume");
         if (movie == null) {
             Intent intent = getActivity().getIntent();
-            //String forecastStr = intent.getStringExtra(Intent.EXTRA_TEXT);
             movie = intent.getParcelableExtra("MovieNode");
         }
-        String title = movie.getTitle();
-        titleTextView.setText("Title: " + title);
-        Log.v(LOG_TAG, title);
+        if (movie == null) {
+            rootView.setVisibility(View.INVISIBLE);
+        }else {
+            String title = movie.getTitle();
+            titleTextView.setText("Title: " + title);
 
-        String releaseDate = movie.getReleaseDate();
-        releaseDateTextView.setText("Release Date: " + releaseDate);
-        Log.v(LOG_TAG, releaseDate);
+            String releaseDate = movie.getReleaseDate();
+            releaseDateTextView.setText("Release Date: " + releaseDate);
 
-        String posterPath = movie.getPosterPath();
-        Log.v(LOG_TAG, posterPath);
-        Picasso.with(getActivity()).load(posterPath).into(posterImageView);
+            String posterPath = movie.getPosterPath();
+            Picasso.with(getActivity()).load(posterPath).into(posterImageView);
 
-        String voteAverage = movie.getVoteAverage();
-        voteAverageTextView.setText("Vote Average: " + voteAverage);
-        Log.v(LOG_TAG, voteAverage);
+            String voteAverage = movie.getVoteAverage();
+            voteAverageTextView.setText("Vote Average: " + voteAverage);
 
-        String summary = movie.getSummary();
-        summaryTextView.setText(summary);
-        Log.v(LOG_TAG, summary);
+            String summary = movie.getSummary();
+            summaryTextView.setText(summary);
 
-        String id = movie.getId();
-        Log.v(LOG_TAG, id);
+            String id = movie.getId();
 
-        if (!dynamicViewsAdded) {
+            if (!dynamicViewsAdded && Utilities.isNetworkAvailable(getActivity())) {
+                try {
+                    addTrailers(id);
+                    addReviews(id);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                dynamicViewsAdded = true;
+            }
+        }
+    }
+
+    private void addTrailers(String id) throws InterruptedException {
+
+        if (Utilities.isNetworkAvailable(getActivity())) {
+            String urlTrailers = FetchMoviesTask.BASE_URL +
+                    "movie/" + id + "/videos?api_key=" + FetchMoviesTask.api_key;
+
+            latch = new CountDownLatch(1);
+            jsonResult = null;
+            FetchJSONTask trailerTask = new FetchJSONTask();
+            trailerTask.execute(urlTrailers);
             try {
-                addTrailers(id);
-                addReviews(id);
+                latch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            dynamicViewsAdded = true;
-        }
 
-    }
-    private void addTrailers(String id) throws InterruptedException {
+            JSONObject moviesJson = null;
+            try {
+                Log.v(LOG_TAG, jsonResult);
+                moviesJson = new JSONObject(jsonResult);
+                JSONArray movieArray = moviesJson.getJSONArray("results");
 
-        String urlTrailers = PopularMoviesMainActivityFragment.FetchMoviesTask.BASE_URL +
-                "movie/" + id + "/videos?api_key=" + PopularMoviesMainActivityFragment.api_key;
-
-        latch = new CountDownLatch(1);
-        jsonResult = null;
-        FetchJSONTask trailerTask = new FetchJSONTask();
-        trailerTask.execute(urlTrailers);
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        JSONObject moviesJson = null;
-        try {
-            Log.v(LOG_TAG, jsonResult);
-            moviesJson = new JSONObject(jsonResult);
-            JSONArray movieArray = moviesJson.getJSONArray("results");
-
-            for (int i=0; i<movieArray.length(); i++) {
-                String title = movieArray.getJSONObject(i).getString("name");
-                String youTubePath = movieArray.getJSONObject(i).getString("key");
-                final String youTubeURLPath = "https://www.youtube.com/watch?v=" + youTubePath;
-
-                LinearLayout ll = new LinearLayout(getActivity());
-                ImageButton playButton = new ImageButton(getActivity());
-                playButton.setBackgroundResource(R.drawable.controls_play);
-                playButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        //********to be replaced by launching youtube video
-                        //URL: https://www.youtube.com/watch?v={key}
-                        //startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=cxLG2wtE7TM")));
-                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(youTubeURLPath)));
-                        /*
-                        Context context = getActivity();
-                        CharSequence text = youTubeURLPath;
-                        int duration = Toast.LENGTH_SHORT;
-                        Toast toast = Toast.makeText(context, text, duration);
-                        toast.show();
-                        */
+                for (int i = 0; i < movieArray.length(); i++) {
+                    String title = movieArray.getJSONObject(i).getString("name");
+                    String youTubePath = movieArray.getJSONObject(i).getString("key");
+                    final String youTubeURLPath = "https://www.youtube.com/watch?v=" + youTubePath;
+                    if (i == 0) {
+                        mshareName =  movie.getTitle() + ": " + title;
+                        mshareYouTubeURLPath = youTubeURLPath;
                     }
-                });
-                ll.addView(playButton);
 
-                TextView tv = new TextView(getActivity());
-                tv.setText(title);
-                ll.addView(tv);
+                    LinearLayout ll = new LinearLayout(getActivity());
+                    ImageButton playButton = new ImageButton(getActivity());
+                    playButton.setBackgroundResource(R.drawable.controls_play);
+                    playButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(youTubeURLPath)));
+                        }
+                    });
+                    ll.addView(playButton);
 
-                trailersLL.addView(ll);
+                    TextView tv = new TextView(getActivity());
+                    tv.setText(title);
+                    ll.addView(tv);
+
+                    trailersLL.addView(ll);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
         }
     }
+
     private void addReviews(String id) {
-        String urlReviews = PopularMoviesMainActivityFragment.FetchMoviesTask.BASE_URL +
-                "movie/" + id + "/reviews?api_key=" + PopularMoviesMainActivityFragment.api_key;
 
-        latch = new CountDownLatch(1);
-        jsonResult = null;
-        FetchJSONTask reviewTask = new FetchJSONTask();
-        reviewTask.execute(urlReviews);
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        if (Utilities.isNetworkAvailable(getActivity())) {
+            String urlReviews = FetchMoviesTask.BASE_URL +
+                    "movie/" + id + "/reviews?api_key=" + FetchMoviesTask.api_key;
 
-        JSONObject moviesJson = null;
-        try {
-            Log.v(LOG_TAG, jsonResult);
-            moviesJson = new JSONObject(jsonResult);
-            JSONArray movieArray = moviesJson.getJSONArray("results");
-
-            for (int i=0; i<movieArray.length(); i++) {
-                String author = movieArray.getJSONObject(i).getString("author");
-                String content = movieArray.getJSONObject(i).getString("content");
-
-                LinearLayout ll = new LinearLayout(getActivity());
-                ll.setOrientation(LinearLayout.VERTICAL);
-
-                TextView tvAuthor = new TextView(getActivity());
-                tvAuthor.setText(author);
-                ll.addView(tvAuthor);
-
-                TextView tvContent = new TextView(getActivity());
-                tvContent.setText(content);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                                                                                LinearLayout.LayoutParams.WRAP_CONTENT);
-                params.setMargins(5, 0, 5, 10);
-                tvContent.setLayoutParams(params);
-                ll.addView(tvContent);
-                reviewsLL.addView(ll);
+            latch = new CountDownLatch(1);
+            jsonResult = null;
+            FetchJSONTask reviewTask = new FetchJSONTask();
+            reviewTask.execute(urlReviews);
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+            JSONObject moviesJson = null;
+            try {
+                Log.v(LOG_TAG, jsonResult);
+                moviesJson = new JSONObject(jsonResult);
+                JSONArray movieArray = moviesJson.getJSONArray("results");
 
+                for (int i = 0; i < movieArray.length(); i++) {
+                    String author = movieArray.getJSONObject(i).getString("author");
+                    String content = movieArray.getJSONObject(i).getString("content");
+
+                    LinearLayout ll = new LinearLayout(getActivity());
+                    ll.setOrientation(LinearLayout.VERTICAL);
+
+                    TextView tvAuthor = new TextView(getActivity());
+                    tvAuthor.setText(author);
+                    ll.addView(tvAuthor);
+
+                    TextView tvContent = new TextView(getActivity());
+                    tvContent.setText(content);
+                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT);
+                    params.setMargins(5, 0, 5, 10);
+                    tvContent.setLayoutParams(params);
+                    ll.addView(tvContent);
+                    reviewsLL.addView(ll);
+                }
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
     }
     public class FetchJSONTask extends AsyncTask<String, Void, Void> {
 
@@ -259,75 +318,10 @@ public class PopularMoviesDetailFragment extends Fragment {
 
         @Override
         protected Void doInBackground(String... params) {
-            // These two need to be declared outside the try/catch
-            // so that they can be closed in the finally block.
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
 
-            // Will contain the raw JSON response as a string.
-            String moviesJsonStr = null;
+            Uri builtUri = Uri.parse(params[0]);
+            jsonResult = Utilities.getJsonMovies(builtUri.toString());
 
-            try {
-                // Construct the URL for the OpenWeatherMap query
-                // Possible parameters are avaiable at OWM's forecast API page, at
-                // http://openweathermap.org/API#forecast
-
-                Uri builtUri = Uri.parse(params[0]);
-
-
-                //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&mode=json&units=metric&cnt=7");
-                URL url = new URL(builtUri.toString());
-                Log.v(LOG_TAG, "Built URI: " + builtUri.toString());
-                // Create the request to OpenWeatherMap, and open the connection
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.setRequestProperty("Accept", "application/json");
-                urlConnection.connect();
-                Log.v(LOG_TAG, "created connection");
-                // Read the input stream into a String
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                Log.v(LOG_TAG, "created buffer");
-                if (inputStream == null) {
-                    // Nothing to do.
-                    return null;
-                }
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line + "\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                moviesJsonStr = buffer.toString();
-                Log.v(LOG_TAG, "Movies JSON string: " + moviesJsonStr);
-            } catch (IOException e) {
-                Log.e("...MainFragment", "Error ", e);
-                // If the code didn't successfully get the movies data, there's no point in attemping
-                // to parse it.
-                return null;
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (final IOException e) {
-                        Log.e("...MainFragment", "Error closing stream", e);
-                    }
-                }
-            }
-                jsonResult = moviesJsonStr;
-
-            //countdown latch so that data is produced and the fragment waits
             latch.countDown();
             return null;
         }
